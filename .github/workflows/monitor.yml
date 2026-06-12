@@ -1,0 +1,34 @@
+name: market-monitor
+
+on:
+  schedule:
+    # UTC 13:45-21:45 每小时 = 美东盘中（含冬夏令时），周一至周五
+    - cron: "45 13-21 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run monitor
+        run: node monitor.js
+      - name: Commit updates
+        run: |
+          git config user.name "market-monitor"
+          git config user.email "bot@local"
+          git add quotes.json alert_state.json
+          if ! git diff --cached --quiet; then
+            git pull --rebase || true
+            git commit -m "quotes update $(date -u +%H:%M)"
+            git push
+          else
+            echo "no changes"
+          fi
