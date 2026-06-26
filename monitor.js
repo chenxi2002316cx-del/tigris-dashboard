@@ -3,6 +3,7 @@
 const fs = require("fs");
 
 const config = JSON.parse(fs.readFileSync("config.json", "utf8"));
+config.discord_webhook = process.env.DISCORD_WEBHOOK || config.discord_webhook || "";
 const state = JSON.parse(fs.readFileSync("alert_state.json", "utf8"));
 
 const UA = { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" } };

@@ -19,6 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run monitor
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: node monitor.js
       - name: Commit updates
         run: |

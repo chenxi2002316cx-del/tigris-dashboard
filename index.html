@@ -1037,6 +1037,15 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", (
 }));
 window.openTicker = openTicker;
 window.openReader = openReader;
+
+setInterval(() => {
+  fetch("quotes.json", {cache:"no-store"})
+    .then(r => r.ok ? r.json() : null)
+    .then(q => {
+      if (q?.quoteDate && q.quoteDate !== DATA.quoteDate) location.reload();
+    })
+    .catch(()=>{});
+}, 5 * 60 * 1000);
 }
 fetch("quotes.json", {cache:"no-store"})
   .then(r => r.ok ? r.json() : null)
