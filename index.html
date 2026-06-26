@@ -93,30 +93,36 @@
   .tact { font-size:12px; color:var(--sub); margin-top:3px; line-height:1.6; }
   .tdist { font-size:12px; font-weight:700; white-space:nowrap; padding:3px 9px; border-radius:9px; }
   .near { background:#f8717122; color:#f87171; } .mid2 { background:#fbbf2422; color:#fbbf24; } .far { background:#2a2f3a; color:#9aa2af; }
-  #qa { max-width:1180px; }
-  #qabox { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; align-items:start; }
-  .qpanel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
-  #qq { width:100%; min-height:92px; resize:vertical; background:#0f1115; color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:14px; line-height:1.7; outline:none; }
+  #qa { max-width:900px; margin:0 auto; }
+  #qchat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  #qmsgs { min-height:320px; max-height:62vh; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding:2px 2px 14px; }
+  .qmsg { display:flex; }
+  .qmsg.user { justify-content:flex-end; }
+  .qmsg.assistant { justify-content:flex-start; }
+  .qbubble { max-width:min(760px, 92%); background:#11141a; border:1px solid var(--line); border-radius:12px; padding:12px 14px; line-height:1.85; font-size:14px; white-space:pre-wrap; }
+  .qmsg.user .qbubble { background:#e8b94a; color:#0f1115; border-color:#e8b94a; white-space:pre-wrap; }
+  .qbubble h3 { margin:0 0 8px; font-size:15px; color:var(--gold); }
+  .qbubble ul { margin:6px 0 0; padding-left:18px; }
+  .qbubble li { margin:5px 0; }
+  .qcursor::after { content:""; display:inline-block; width:7px; height:1.1em; margin-left:3px; vertical-align:-2px; background:var(--gold); animation:blink .9s steps(2,end) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  #qform { border-top:1px solid var(--line); padding-top:12px; display:flex; gap:10px; align-items:flex-end; }
+  #qq { flex:1; min-height:46px; max-height:130px; resize:vertical; background:#0f1115; color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:11px 13px; font-size:14px; line-height:1.6; outline:none; }
   #qq:focus { border-color:var(--gold); box-shadow:0 0 0 2px #e8b94a22; }
-  #qask { margin-top:10px; background:var(--gold); color:var(--bg); border:0; border-radius:8px; padding:9px 18px; font-size:14px; font-weight:700; cursor:pointer; }
+  #qask { background:var(--gold); color:var(--bg); border:0; border-radius:8px; padding:11px 18px; font-size:14px; font-weight:700; cursor:pointer; min-width:72px; }
   #qask:disabled { opacity:.55; cursor:not-allowed; }
-  #qout { margin-top:14px; display:grid; gap:10px; }
-  .qanswer { background:#11141a; border:1px solid var(--line); border-radius:10px; padding:14px 16px; line-height:1.8; font-size:14px; }
-  .qanswer h3 { margin:0 0 8px; font-size:16px; color:var(--gold); }
-  .qanswer ul { margin:6px 0 0; padding-left:18px; }
-  .qanswer li { margin:5px 0; }
-  .qsrc { background:#11141a; border:1px solid var(--line); border-radius:10px; padding:11px 12px; }
+  .qsources { margin-top:10px; border-top:1px solid var(--line); padding-top:8px; }
+  .qsources summary { color:var(--gold); font-size:12px; cursor:pointer; }
+  .qsrc { background:#0f1115; border:1px solid var(--line); border-radius:10px; padding:10px 11px; margin-top:8px; }
   .qsrc .ph { display:flex; align-items:center; gap:8px; margin-bottom:6px; color:var(--sub); font-size:12px; }
   .qsrc .pt { color:#d4d8df; line-height:1.7; font-size:13px; white-space:pre-wrap; }
   .qsrc a { color:var(--gold); text-decoration:none; margin-left:auto; }
-  #qquick { display:flex; flex-wrap:wrap; gap:7px; }
-  #qquick .chip { border-radius:9px; padding:6px 10px; }
-  #qside h3 { margin:0 0 10px; color:var(--sub); font-size:13px; }
-  #qside .note { margin:10px 0 0; line-height:1.7; }
   @media (max-width: 860px){
     nav { overflow-x:auto; padding-bottom:10px; }
     nav button { white-space:nowrap; }
-    #cardgrid, #qabox, #mgrid { grid-template-columns:1fr; }
+    #cardgrid, #mgrid { grid-template-columns:1fr; }
+    #qform { flex-direction:column; align-items:stretch; }
+    #qask { width:100%; }
     #mright { min-height:380px; }
   }
 </style>
@@ -137,18 +143,14 @@
 </nav>
 </div>
 <section id="qa" class="on">
-  <div id="qabox">
-    <div class="qpanel">
-      <textarea id="qq" placeholder="问一个关于老师观点的问题，例如：MU 财报后怎么看？苹果为什么不适合抄底？GOOG 现在的操作线是什么？"></textarea>
-      <button id="qask">生成回答</button>
-      <div id="qout"></div>
-    </div>
-    <div class="qpanel" id="qside">
-      <h3>常问问题</h3>
-      <div id="qquick"></div>
-      <p class="note">答案只引用本页已收录的观点、长文、行动线索和行情快照；不构成投资建议。</p>
+  <div id="qchat">
+    <div id="qmsgs"></div>
+    <div id="qform">
+      <textarea id="qq" placeholder="问老师观点库，例如：MU 财报后怎么看？苹果为什么不适合抄底？"></textarea>
+      <button id="qask">发送</button>
     </div>
   </div>
+  <p class="note">回答只引用本页已收录观点、长文、行动线索和行情快照；不构成投资建议。</p>
 </section>
 <section id="cards"><div id="stats"></div><div id="cardgrid"></div></section>
 <section id="graph"><div id="gwrap"><canvas id="gc"></canvas><div id="gtip"></div></div>
@@ -984,18 +986,9 @@ addEventListener("keydown", e=>{ if (e.key==="Escape") document.getElementById("
 renderFeed();
 
 /* ---- 观点问答 ---- */
-const qaQuick = [
-  "MU 财报后怎么看？",
-  "苹果为什么不适合抄底？",
-  "GOOG 现在的操作线是什么？",
-  "老师对 AI 泡沫怎么看？",
-  "哪些是核心仓，哪些是战术仓？",
-  "本周最该盯的风险是什么？"
-];
 const qInput = document.getElementById("qq");
-const qOut = document.getElementById("qout");
-document.getElementById("qquick").innerHTML = qaQuick.map(x=>`<span class="chip">${esc(x)}</span>`).join("");
-document.querySelectorAll("#qquick .chip").forEach(c=>c.onclick=()=>{ qInput.value=c.textContent; answerQuestion(); });
+const qMsgs = document.getElementById("qmsgs");
+let qaBusy = false;
 document.getElementById("qask").onclick = answerQuestion;
 qInput.addEventListener("keydown", e=>{ if((e.metaKey||e.ctrlKey) && e.key==="Enter") answerQuestion(); });
 
@@ -1062,38 +1055,84 @@ function actionLines(tk){
 function answerTicker(t, docs){
   const q = DATA.quotes[t.tk] || {}, j = judge(t), vs = VS[j.s];
   const posts = DATA.posts.filter(p=>p.t.includes("$"+t.tk) || p.t.includes(t.name)).slice(0,4);
-  return `<div class="qanswer">
+  return `
     <h3>$${t.tk} · ${esc(t.name)}</h3>
     <div>老师立场：<b style="color:${CN[t.stance]}">${SLBL[t.stance]}</b>；验证状态：<b style="color:${vs[1]}">${vs[2]}</b>。${q.p ? `当前快照：<b>${q.p.toLocaleString()}</b>，涨跌 <span class="${q.chg>=0?"up":"down"}">${q.chg>=0?"+":""}${q.chg}%</span>（${DATA.quoteDate}）。` : ""}</div>
     <ul>${(t.calls||[]).slice(0,4).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
     ${actionLines(t.tk) ? `<div style="margin-top:8px;color:#c6cbd4">行动线索：</div><ul>${actionLines(t.tk)}</ul>` : ""}
     <div class="note">我的整理：只把老师已收录观点转成可执行观察条件；是否交易、仓位大小和止损由你自己决策。</div>
-  </div>` + (posts.length ? `<div class="qanswer"><h3>相关原文</h3><ul>${posts.map(p=>`<li>2026-${p.dt}：${esc(textCut(p.t,110))}</li>`).join("")}</ul></div>` : "");
+  ` + (posts.length ? `<h3>相关原文</h3><ul>${posts.map(p=>`<li>2026-${p.dt}：${esc(textCut(p.t,110))}</li>`).join("")}</ul>` : "");
 }
 function answerGeneral(q, docs){
-  if (!docs.length) return `<div class="qanswer"><h3>没有找到足够依据</h3><div>换一个更具体的问题，或带上标的代码、事件名、关键词。</div></div>`;
+  if (!docs.length) return `<h3>没有找到足够依据</h3><div>换一个更具体的问题，或带上标的代码、事件名、关键词。</div>`;
   const bullets = docs.slice(0,4).map(d=>`<li><b>${esc(d.title)}</b>：${esc(textCut(d.text,150))}</li>`).join("");
-  return `<div class="qanswer">
+  return `
     <h3>基于已收录材料的回答</h3>
     <ul>${bullets}</ul>
     <div class="note">我的整理：以上是检索归纳，不是老师新增原话；具体操作需要你自己决策。</div>
-  </div>`;
+  `;
 }
 function renderSources(docs){
   if (!docs.length) return "";
-  return docs.map(d=>`<div class="qsrc">
+  return `<details class="qsources">
+    <summary>查看依据（${docs.length}）</summary>
+    ${docs.map(d=>`<div class="qsrc">
     <div class="ph"><span class="badge ${sourceBadge(d.kind)}">${sourceLabel(d.kind)}</span><span>${esc(d.dt||"")}</span>${d.url?`<a target="_blank" href="${d.url}">原文 ↗</a>`:""}</div>
     <div class="pt">${esc(textCut(d.text,260)).replace(/\$([A-Z]{1,5})/g, '<span class="tkx">$$$1</span>')}</div>
-  </div>`).join("");
+  </div>`).join("")}
+  </details>`;
+}
+function appendMsg(role, html, asHtml=false){
+  const row = document.createElement("div");
+  row.className = "qmsg " + role;
+  const bubble = document.createElement("div");
+  bubble.className = "qbubble";
+  if (asHtml) bubble.innerHTML = html; else bubble.textContent = html;
+  row.appendChild(bubble);
+  qMsgs.appendChild(row);
+  qMsgs.scrollTop = qMsgs.scrollHeight;
+  return bubble;
+}
+function htmlText(html){
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent.replace(/\n{3,}/g, "\n\n").trim();
+}
+function setQaBusy(on){
+  qaBusy = on;
+  document.getElementById("qask").disabled = on;
+  qInput.disabled = on;
+}
+function streamAnswer(bubble, text, finalHtml){
+  bubble.classList.add("qcursor");
+  let i = 0;
+  const step = Math.max(4, Math.ceil(text.length / 80));
+  const timer = setInterval(()=>{
+    i = Math.min(text.length, i + step);
+    bubble.textContent = text.slice(0, i);
+    qMsgs.scrollTop = qMsgs.scrollHeight;
+    if (i >= text.length){
+      clearInterval(timer);
+      bubble.classList.remove("qcursor");
+      bubble.innerHTML = finalHtml;
+      setQaBusy(false);
+      qInput.focus();
+    }
+  }, 18);
 }
 function answerQuestion(){
+  if (qaBusy) return;
   const q = qInput.value.trim();
-  if (!q){ qOut.innerHTML = `<div class="qanswer"><h3>先输入一个问题</h3><div>例如：MU 财报后怎么看？</div></div>`; return; }
+  if (!q) return;
+  appendMsg("user", q);
+  qInput.value = "";
+  setQaBusy(true);
   const docs = topDocs(q, 7), t = findTicker(q);
-  qOut.innerHTML = (t ? answerTicker(t, docs) : answerGeneral(q, docs)) + renderSources(docs);
+  const finalHtml = (t ? answerTicker(t, docs) : answerGeneral(q, docs)) + renderSources(docs);
+  const bubble = appendMsg("assistant", "正在整理老师观点...");
+  streamAnswer(bubble, htmlText(finalHtml), finalHtml);
 }
-qInput.value = "MU 财报后怎么看？";
-answerQuestion();
+appendMsg("assistant", "可以直接问：MU 财报后怎么看、苹果为什么不适合抄底、GOOG 的操作线是什么。", false);
 
 function gotoFeed(q){
   document.querySelector('nav button[data-t="feed"]').click();
