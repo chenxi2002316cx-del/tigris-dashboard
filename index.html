@@ -83,6 +83,26 @@
   .post a { color:var(--gold); text-decoration:none; font-size:12px; margin-left:auto; }
   .ksubs { background:#e8b94a22; color:#e8b94a; } .kpub { background:#60a5fa22; color:#60a5fa; }
   .tkx { color:var(--green); font-weight:600; }
+  #decode { max-width:1060px; }
+  #decodebar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px; }
+  #dq { background:var(--card); border:1px solid var(--line); border-radius:8px; color:var(--txt); padding:8px 12px; font-size:13px; width:250px; outline:none; }
+  #decodechips { display:flex; flex-wrap:wrap; gap:6px; }
+  #decodelist { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:12px; }
+  .decodecard { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px; display:flex; flex-direction:column; gap:10px; }
+  .decodecard .dh { display:flex; flex-wrap:wrap; gap:7px; align-items:center; color:var(--sub); font-size:12px; }
+  .decodecard .dh a { color:var(--gold); text-decoration:none; margin-left:auto; }
+  .decodecard h3 { font-size:15px; margin:0; line-height:1.45; }
+  .decodegrid { display:grid; gap:8px; }
+  .decodebox { background:#11141a; border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:12.5px; line-height:1.75; color:#d7dbe3; }
+  .decodebox b { color:var(--gold); display:block; font-size:12px; margin-bottom:2px; }
+  .decodebox ul { margin:4px 0 0; padding-left:17px; }
+  .decodebox li { margin:2px 0; }
+  .dtype { background:#2a2f3a; color:#d8dce3; }
+  .dmethod { background:#60a5fa22; color:#60a5fa; }
+  .dvaluation { background:#4ade8022; color:#4ade80; }
+  .drisk { background:#fbbf2422; color:#fbbf24; }
+  .devent { background:#e8b94a22; color:#e8b94a; }
+  .dmacro { background:#f8717122; color:#f87171; }
   #todolist { max-width:880px; display:grid; gap:18px; }
   .todogrp h3 { font-size:14px; color:var(--sub); margin:0 0 8px; font-weight:600; }
   .titem { display:flex; gap:10px; align-items:flex-start; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 14px; margin-bottom:8px; }
@@ -138,6 +158,7 @@
   <button data-t="cards">标的与验证</button>
   <button data-t="graph">知识图谱</button>
   <button data-t="board">记分板</button>
+  <button data-t="decode">推文解读</button>
   <button data-t="feed">推文原文</button>
   <button data-t="todo">行动清单</button>
 </nav>
@@ -156,6 +177,14 @@
 <section id="graph"><div id="gwrap"><canvas id="gc"></canvas><div id="gtip"></div></div>
   <p class="note">拖动节点 · 悬停看观点摘要 · 金=主题，绿=看多，红=看空，蓝=波段 · 点击标的节点跳转卡片</p></section>
 <section id="board"></section>
+<section id="decode">
+  <div id="decodebar">
+    <input id="dq" type="text" placeholder="搜索推文解读 / 标的…">
+    <div id="decodechips"></div>
+  </div>
+  <div id="decodelist"></div>
+  <p class="note">解读层用于把老师原文拆成可执行提醒：老师原话以原文摘录为准；信号分类、观察条件和风控是基于本页已收录内容的辅助推断，不构成投资建议。</p>
+</section>
 <section id="feed">
   <div id="feedbar">
     <input id="fq" type="text" placeholder="搜索原文 / 标的…">
@@ -941,6 +970,96 @@ gc.addEventListener("mousedown", e=>{ gdrag=gpick(e); });
 gc.addEventListener("mouseup", e=>{ const n=gpick(e);
   if (n && DATA.quotes[n.id]) openTicker(n.id);
   gdrag=null; });
+
+/* ---- tweet decoding (推文解读) ---- */
+const DQ = {q:"", k:"all"};
+const decodeTypes = [
+  ["all","全部"],
+  ["valuation","估值/价位"],
+  ["risk","仓位/风控"],
+  ["event","事件验证"],
+  ["macro","宏观/分母"],
+  ["method","方法论"]
+];
+const decodeTypeMeta = {
+  valuation:{label:"估值/价位", cls:"dvaluation", intent:"老师在给中长期定价锚或关键价位，不应只按涨跌理解。"},
+  risk:{label:"仓位/风控", cls:"drisk", intent:"老师重点在仓位、现金和失效条件，先处理风险再看进攻。"},
+  event:{label:"事件验证", cls:"devent", intent:"老师在用财报、产品、监管或突发事件检验原有主线。"},
+  macro:{label:"宏观/分母", cls:"dmacro", intent:"老师在审计利率、油价、信用或流动性对估值分母的影响。"},
+  method:{label:"方法论", cls:"dmethod", intent:"老师在讲操作框架，优先沉淀为规则而不是追单。"}
+};
+function postTickers(p){
+  const up = p.t.toUpperCase();
+  return DATA.tickers.filter(t => up.includes("$"+t.tk) || up.split(/[^A-Z]/).includes(t.tk) || p.t.includes(t.name));
+}
+function decodeType(p){
+  const s = p.t;
+  if (/仓位|减仓|核心仓|技术仓|现金|杠杆|all in|清仓|风控|风险|分批|兑现/.test(s)) return "risk";
+  if (/CPI|PCE|FOMC|美联储|利率|通胀|油价|信用利差|就业|地缘|战争/.test(s)) return "macro";
+  if (/财报|发布会|IPO|数据|订单|三期|首日|盘前|盘后|事件|更新|验证/.test(s)) return "event";
+  if (/估值|目标|合理|PE|PS|EPS|价位|区间|上限|下沿|上沿|突破|触及/.test(s)) return "valuation";
+  return "method";
+}
+function decodeActions(tks, type){
+  const tkSet = new Set(tks.map(t=>t.tk));
+  let acts = DATA.actions.filter(a => tkSet.has(a.tk) || (type==="macro" && a.tk==="宏观") || (type==="method" && a.tk==="纪律"));
+  if (!acts.length && type==="risk") acts = DATA.actions.filter(a=>a.tk==="纪律");
+  return acts.slice(0,3);
+}
+function decodePost(p){
+  const tks = postTickers(p);
+  const type = decodeType(p);
+  const meta = decodeTypeMeta[type];
+  const acts = decodeActions(tks, type);
+  const subject = tks.length ? tks.map(t=>"$"+t.tk).join(" / ") : (type==="macro" ? "宏观" : "纪律/方法论");
+  const stance = tks.map(t=>`${t.tk}:${SLBL[t.stance]}`).join("，") || (type==="macro" ? "宏观变量" : "操作框架");
+  const read = [
+    meta.intent,
+    tks.length ? `相关标的：${stance}。` : "没有明确新增单一标的，重点看框架是否改变。"
+  ].join(" ");
+  const conditions = acts.length
+    ? acts.map(a=>`若${a.cond}，则${a.act}`)
+    : ["若后续有新原文给出价位、仓位或事件窗口，再升级为行动提醒；没有明确信号时只做观察。"];
+  const risk = type==="risk"
+    ? "仓位词优先级高于价格想象：保留现金、避免杠杆，确认基本面未证伪后再考虑回补。"
+    : type==="valuation"
+      ? "估值锚不是追涨指令；接近目标/上限时更要看老师是否更新区间和仓位态度。"
+      : type==="macro"
+        ? "宏观推断要等债券、油价、信用利差和市场承接确认，不能只按标题交易。"
+        : "事件后先看价格、成交量和主线是否被证伪，再决定是否从观察转为操作。";
+  return {type, meta, subject, read, conditions, risk};
+}
+const dq = document.getElementById("dq"), decodeChips = document.getElementById("decodechips");
+decodeTypes.forEach(([v,l])=>{
+  const c = document.createElement("span"); c.className = "chip"+(v==="all"?" on":""); c.textContent = l; c.dataset.v = v;
+  c.onclick = ()=>{ document.querySelectorAll("#decodechips .chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); DQ.k=v; renderDecode(); };
+  decodeChips.appendChild(c);
+});
+dq.addEventListener("input", ()=>{ DQ.q = dq.value.trim(); renderDecode(); });
+function renderDecode(){
+  const q = DQ.q.toLowerCase();
+  const list = DATA.posts.map(p=>({p, d:decodePost(p)})).filter(x =>
+    (DQ.k==="all" || x.d.type===DQ.k) &&
+    (!q || x.p.t.toLowerCase().includes(q) || x.d.subject.toLowerCase().includes(q))
+  );
+  document.getElementById("decodelist").innerHTML = list.length ? list.map(({p,d})=>`
+    <div class="decodecard">
+      <div class="dh">
+        <span class="badge ${p.k==="pub"?"kpub":"ksubs"}">${p.k==="subs"?"订阅":p.k==="art"?"长文":"公开"}</span>
+        <span class="badge ${d.meta.cls}">${d.meta.label}</span>
+        <span>2026-${p.dt}</span>
+        <a href="https://x.com/tig88411109/status/${p.id}" target="_blank">原文 ↗</a>
+      </div>
+      <h3>${esc(d.subject)}｜${esc(textCut(p.t.replace(/\$([A-Z]{1,5})/g,"$1"), 52))}</h3>
+      <div class="decodegrid">
+        <div class="decodebox"><b>老师原文摘录</b>${esc(textCut(p.t, 170)).replace(/\$([A-Z]{1,5})/g, '<span class="tkx">$$$1</span>')}</div>
+        <div class="decodebox"><b>我的解读</b>${esc(d.read)}</div>
+        <div class="decodebox"><b>观察条件</b><ul>${d.conditions.map(c=>`<li>${esc(textCut(c, 120))}</li>`).join("")}</ul></div>
+        <div class="decodebox"><b>风控</b>${esc(d.risk)}</div>
+      </div>
+    </div>`).join("") : `<p class="note">没有匹配的推文解读。</p>`;
+}
+renderDecode();
 
 /* ---- feed (推文原文) ---- */
 const FQ = {q:"", k:"all"};
