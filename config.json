@@ -13,18 +13,29 @@
     "MRNA",
     "AEO",
     "SPCX",
-    "GLW"
+    "GLW",
+    "MSFT",
+    "META",
+    "NOW",
+    "TSM",
+    "ASML"
   ],
   "levels": {
     "MU": {
       "lines": [
         600,
+        700,
         765,
+        790,
+        905,
         960
       ],
       "labels": [
         "建仓下沿",
+        "估值区间下限区域",
         "建仓上沿",
+        "恐慌位",
+        "右侧确认(收盘突破)",
         "bull情景"
       ]
     },
@@ -87,9 +98,36 @@
         "重仓减一点",
         "核心减压"
       ]
+    },
+    "MSFT": {
+      "lines": [
+        380,
+        400,
+        450,
+        500
+      ],
+      "labels": [
+        "高赔率区",
+        "合理区间下沿",
+        "合理区间上沿",
+        "乐观情景"
+      ]
+    },
+    "META": {
+      "lines": [
+        500,
+        600,
+        800
+      ],
+      "labels": [
+        "合理区间下沿",
+        "合理区间上沿",
+        "乐观情景"
+      ]
     }
   },
   "mcap_keep": {
-    "GOOG": 4.368
-  }
+    "GOOG": 4.11
+  },
+  "_webhook_note": "Discord webhook 由 GitHub Actions Secret DISCORD_WEBHOOK 注入（见 monitor.js），不写入本文件"
 }
