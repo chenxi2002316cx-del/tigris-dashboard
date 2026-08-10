@@ -19,7 +19,10 @@
     "NOW",
     "TSM",
     "ASML",
-    "SNDK"
+    "SNDK",
+    "PLTR",
+    "LITE",
+    "COHR"
   ],
   "levels": {
     "MU": {
@@ -158,7 +161,7 @@
     }
   },
   "mcap_keep": {
-    "GOOG": 4.11
+    "GOOG": 4.32
   },
   "_webhook_note": "Discord webhook 由 GitHub Actions Secret DISCORD_WEBHOOK 注入（见 monitor.js），不写入本文件"
 }
